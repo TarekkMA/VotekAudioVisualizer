@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.votek.tarekkma.votekaudiovisualizer.MainActivity">
+
+    <com.alex.siriwaveview.SiriWaveView
+        android:layout_weight="1"
+        android:id="@+id/waveView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:waveAmount="3"
+        app:waveColor="@android:color/white"
+        app:waveFrequency="10.0"
+        app:waveHeight="50dp"
+        app:waveInitialPhaseOffset="0"
+        app:wavePhaseShift="-0.05"
+        app:waveVerticalPosition="2"/>
+
+
+    <SeekBar
+        android:id="@+id/audioSeekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="8dp"/>
+
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/audioMicBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="normal"
+            android:src="@drawable/microphone_96"
+            app:useCompatPadding="true"/>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/audioFileBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="normal"
+            android:src="@drawable/audio_file_96"
+            app:useCompatPadding="true"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:text="Select Audio Source Above"/>
+
+
+
+
+
+
+</LinearLayout>
