@@ -1,4 +1,4 @@
-package com.votek.tarekkma.votekaudiovisualizer.fft;
+package com.votek.tarekkma.votekaudiovisualizer;
 /**
   * FFT transform of a real periodic sequence.
   * @author Baoshe Zhang

@@ -6,20 +6,37 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.media.MediaPlayer;
+import android.media.audiofx.Visualizer;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
+
+import java.nio.ByteBuffer;
 
 /**
  * Created by Alex on 6/25/2016.
  */
 public class SiriWaveView extends View {
 
+    private byte[] mBytes;
+    private byte[] mFFTBytes;
+    private float[] mFFTPoints;
+
+    float precent[] = new float[]{0.2f,0.3f,0.5f};//bands percent
+    int waveVals[] = new int[]{0,0,0};//max
+    int frqIndex[] = new int[3];
+
+    private int mDivisions = 2;
+    private int mSampleRate;
+    private Visualizer mVisualizer;
+
     private Path mPath;
     private Paint mPaint;
 
     private float frequency = 1.5f;
     private float IdleAmplitude = 0.00f;
-    private int waveNumber = 2;
+    private int waveNumber = 3;
     private float phaseShift = 0.15f;
     private float initialPhaseOffset = 0.0f;
     private float waveHeight;
@@ -31,6 +48,9 @@ public class SiriWaveView extends View {
 
 
     private double[] frqPowers = null;
+
+
+
 
 
     public void setFrqPowers(double[] frqPowers) {
@@ -89,36 +109,75 @@ public class SiriWaveView extends View {
         }
     }
 
+
+    int getFreqFromBin(int bins,int index){
+        return (mSampleRate / bins) * index;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawPath(mPath, mPaint);
-        updatePath();
+        updatePathReal(canvas);
     }
 
-    public void updatePath() {
-        if(frqPowers==null)return;
+    public static double[] toDoubleArray(byte[] byteArray){
+        int times = Double.SIZE / Byte.SIZE;
+        double[] doubles = new double[byteArray.length / times];
+        for(int i=0;i<doubles.length;i++){
+            doubles[i] = ByteBuffer.wrap(byteArray, i*times, times).getDouble();
+        }
+        return doubles;
+    }
 
-        int width = getWidth();
-        int height = getHeight();
-
+    public void updatePathReal(Canvas canvas) {
         mPath.reset();
 
-        int centerY = height/2;
-        int jumpX   = width/frqPowers.length;
 
-        mPath.moveTo(0,centerY);
-
+        if(frqPowers == null) return;
 
         for (int i = 0; i < frqPowers.length; i++) {
-            int x = i*jumpX;
-            int y = (int) (centerY - (frqPowers[i] * 1000));
-            mPath.lineTo(x, y);
+            int x = i;
+            int upy = canvas.getHeight()/2;
+            int downy = (int) (100 - (frqPowers[i] * 10));
+
+            canvas.drawLine(x, downy, x, upy, mPaint);
         }
 
 
+        //updatePath();
+    }
 
+    private void updatePath() {
+        mPath.reset();
 
+        phase += phaseShift;
+        amplitude = Math.max(level, IdleAmplitude);
 
+        for (int i = 0; i < waveNumber; i++) {
+            float halfHeight = getHeight() / waveVerticalPosition;
+            float width = getWidth();
+            float mid = width / 2.0f;
+
+            float maxAmplitude = halfHeight - (halfHeight - waveHeight);
+
+            // Progress is a value between 1.0 and -0.5, determined by the current wave idx, which is used to alter the wave's amplitude.
+            float progress = 1.0f - (float) i / waveNumber;
+            float normedAmplitude = (1.5f * progress - 0.5f) * amplitude;
+
+            float multiplier = (float) Math.min(1.0, (progress / 3.0f * 2.0f) + (1.0f / 3.0f));
+
+            for (int x = 0; x < width; x++) {
+                float scaling = (float) (-Math.pow(1 / mid * (x - mid), 2) + 1);
+
+                float y = (float) (scaling * maxAmplitude * normedAmplitude * Math.sin(2 * Math.PI * (x / width) * frequency + phase + initialPhaseOffset) + halfHeight);
+
+                if (x == 0) {
+                    mPath.moveTo(x, y);
+                } else {
+                    mPath.lineTo(x, y);
+                }
+            }
+        }
         //mPath.close();
     }
 

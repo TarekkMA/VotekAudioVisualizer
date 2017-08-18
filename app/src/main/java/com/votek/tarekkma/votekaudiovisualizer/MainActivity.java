@@ -2,14 +2,22 @@ package com.votek.tarekkma.votekaudiovisualizer;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -24,6 +32,22 @@ import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
 
+
+    int frequency =  44100;
+    int channelConfiguration = AudioFormat.CHANNEL_CONFIGURATION_MONO;
+    int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
+    int blockSize = 512;
+
+    Bitmap bitmap;
+    Canvas canvas;
+    Paint paint;
+
+
+    private RealDoubleFFT transformer;
+
+
+    boolean started = false;
+
     private enum AudioSource {
         FROM_FILE,FROM_RECORD
     }
@@ -34,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     //Views
     @BindView(R.id.waveView)
-    SiriWaveView waveView;
+    SiriWaveView imageView;
 
     @BindView(R.id.audioMicBtn)
     FloatingActionButton audioMicBtn;
@@ -46,6 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
     @BindView(R.id.statusText)
     TextView statusText;
+
+    RecordAudio recordTask;
 
 
     //Permissions From 6.0+ devices
@@ -103,25 +129,24 @@ public class MainActivity extends AppCompatActivity {
         recordFilePath = getExternalCacheDir().getAbsolutePath()
                         + File.separator + recordFileName;
 
-        audioProcessor = new AudioProcessor(waveView);
-
-
+        //audioProcessor = new AudioProcessor(waveView);
         //waveView.startAnimation();
+
+        transformer = new RealDoubleFFT(blockSize);
 
     }
 
     @OnClick(R.id.audioMicBtn)
     void handelAudioFromMicButton(){
-        audioSource = AudioSource.FROM_RECORD;
-        if(!isRecording){
-            startRecording();
-            statusText.setText("Recoreding Audio From Mic");
+
+        if (started) {
+            started = false;
+            recordTask.cancel(true);
+        } else {
+            started = true;
+            recordTask = new RecordAudio();
+            recordTask.execute();
         }
-        else {
-            stopRecording();
-            statusText.setText("Playing Audio Recorded");
-        }
-        isRecording=!isRecording;
     }
 
     @OnClick(R.id.audioFileBtn)
@@ -155,7 +180,10 @@ public class MainActivity extends AppCompatActivity {
         recorder = null;
         startPlaying(recordFilePath);
 
-        //audioProcessor.prossesAudio(new File(recordFilePath));
+//       audioProcessor.prossesAudio(new File(recordFilePath));
+/*        if(audioProcessor!=null)audioProcessor.cancel(true);
+        audioProcessor = new AudioProcessor(waveView,new File(recordFilePath));
+        audioProcessor.execute();*/
     }
 
 
@@ -167,8 +195,10 @@ public class MainActivity extends AppCompatActivity {
             player.setDataSource(path);
             player.prepare();
             player.start();
+            //waveView.link(player);
         } catch (IOException e) {
             Log.e(TAG, "prepare() failed");
+            Log.e(TAG, "startPlaying: ",e );
         }
     }
 
@@ -177,6 +207,79 @@ public class MainActivity extends AppCompatActivity {
 
         player.release();
         player = null;
+    }
+
+
+    public class RecordAudio extends AsyncTask<Void, double[], Void> {
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+
+            try {
+                // int bufferSize = AudioRecord.getMinBufferSize(frequency,
+                // AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                int bufferSize = AudioRecord.getMinBufferSize(frequency,
+                        channelConfiguration, audioEncoding);
+
+                AudioRecord audioRecord = new AudioRecord(
+                        MediaRecorder.AudioSource.MIC, frequency,
+                        channelConfiguration, audioEncoding, bufferSize);
+
+                short[] buffer = new short[blockSize];
+                double[] toTransform = new double[blockSize];
+
+                audioRecord.startRecording();
+
+                // started = true; hopes this should true before calling
+                // following while loop
+
+                while (started) {
+                    int bufferReadResult = audioRecord.read(buffer, 0,
+                            blockSize);
+
+                    for (int i = 0; i < blockSize && i < bufferReadResult; i++) {
+                        toTransform[i] = (double) buffer[i] / 32768.0; // signed
+                        // 16
+                    }                                       // bit
+                    transformer.ft(toTransform);
+                    publishProgress(toTransform);
+
+
+
+                }
+
+                audioRecord.stop();
+
+            } catch (Throwable t) {
+                t.printStackTrace();
+                Log.e("AudioRecord", "Recording Failed");
+            }
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(double[]... toTransform) {
+            imageView.setFrqPowers(toTransform[0]);
+
+
+            /*
+            canvas.drawColor(Color.BLACK);
+
+            for (int i = 0; i < toTransform[0].length; i++) {
+                int x = i;
+                int downy = (int) (100 - (toTransform[0][i] * 10));
+                int upy = 100;
+
+                canvas.drawLine(x, downy, x, upy, paint);
+            }
+
+            imageView.invalidate();
+
+            // TODO Auto-generated method stub
+            // super.onProgressUpdate(values);
+            */
+        }
+
     }
 
 

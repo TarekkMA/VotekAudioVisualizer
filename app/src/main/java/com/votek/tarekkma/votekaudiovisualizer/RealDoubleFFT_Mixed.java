@@ -1,4 +1,4 @@
-package com.votek.tarekkma.votekaudiovisualizer.fft;
+package com.votek.tarekkma.votekaudiovisualizer;
 /**
   * @author Baoshe Zhang
   * @author Astronomical Instrument Group of University of Lethbridge.

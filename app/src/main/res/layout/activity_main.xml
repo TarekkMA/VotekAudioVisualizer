@@ -8,17 +8,17 @@
     tools:context="com.votek.tarekkma.votekaudiovisualizer.MainActivity">
 
     <com.alex.siriwaveview.SiriWaveView
-        android:layout_weight="1"
         android:id="@+id/waveView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_weight="1"
         app:waveAmount="3"
         app:waveColor="@android:color/white"
         app:waveFrequency="10.0"
-        app:waveHeight="50dp"
+        app:waveHeight="100dp"
         app:waveInitialPhaseOffset="0"
         app:wavePhaseShift="-0.05"
-        app:waveVerticalPosition="2"/>
+        app:waveVerticalPosition="2" />
 
 
     <SeekBar

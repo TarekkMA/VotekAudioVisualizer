@@ -1,4 +1,4 @@
-package com.votek.tarekkma.votekaudiovisualizer.fft;
+package com.votek.tarekkma.votekaudiovisualizer;
 /**
   * Construct a 1-D complex data sequence.
 */
